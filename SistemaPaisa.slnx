@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SistemaPaisa.Application/SistemaPaisa.Application.csproj" />
+    <Project Path="src/SistemaPaisa.Domain/SistemaPaisa.Domain.csproj" />
+    <Project Path="src/SistemaPaisa.Infrastructure/SistemaPaisa.Infrastructure.csproj" />
+    <Project Path="src/SistemaPaisa.Web/SistemaPaisa.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SistemaPaisa.Application.Tests/SistemaPaisa.Application.Tests.csproj" />
+    <Project Path="tests/SistemaPaisa.Domain.Tests/SistemaPaisa.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

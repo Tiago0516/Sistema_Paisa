@@ -1,0 +1,51 @@
+@model SistemaPaisa.Application.Features.Productos.Commands.UpdateProducto.UpdateProductoCommand
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Editar producto";
+    var categorias = ViewBag.Categorias as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+}
+
+<h1 class="h3 mb-3">Editar producto</h1>
+
+<form asp-action="Edit" method="post">
+    <input asp-for="Id" type="hidden" />
+
+    <div class="mb-3">
+        <label asp-for="Nombre" class="form-label"></label>
+        <input asp-for="Nombre" class="form-control" />
+        <span asp-validation-for="Nombre" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Descripcion" class="form-label"></label>
+        <textarea asp-for="Descripcion" class="form-control"></textarea>
+        <span asp-validation-for="Descripcion" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Precio" class="form-label"></label>
+        <input asp-for="Precio" class="form-control" />
+        <span asp-validation-for="Precio" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Stock" class="form-label"></label>
+        <input asp-for="Stock" class="form-control" />
+        <span asp-validation-for="Stock" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="CategoriaId" class="form-label">Categoria</label>
+        <select asp-for="CategoriaId" asp-items="categorias" class="form-select">
+            <option value="">Seleccione una categoria</option>
+        </select>
+        <span asp-validation-for="CategoriaId" class="text-danger"></span>
+    </div>
+    <div class="form-check mb-3">
+        <input asp-for="Activo" class="form-check-input" />
+        <label asp-for="Activo" class="form-check-label"></label>
+    </div>
+    <button type="submit" class="btn btn-primary">Actualizar</button>
+    <a asp-action="Index" class="btn btn-secondary">Volver</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
