@@ -1,0 +1,45 @@
+@model SistemaPaisa.Application.Features.Profiles.Commands.UpdateProfile.UpdateProfileCommand
+
+@{
+    ViewData["Title"] = "Editar perfil";
+}
+
+<div class="content-card">
+    <h1 class="h4 mb-4">Editar perfil</h1>
+
+    <form asp-action="Edit" method="post" class="profile-form" data-actions-url="@Url.Action("ActionsByModule", "Profiles")">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Nombre</label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label">Descripción</label>
+            <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Módulos del menú lateral</label>
+            <partial name="_ProfileModulesCheckboxes" />
+        </div>
+        <div class="mb-3 form-check">
+            <input asp-for="IsActive" class="form-check-input" />
+            <label asp-for="IsActive" class="form-check-label">Activo</label>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Acciones permitidas</label>
+            <div class="profile-actions-list" data-selected-actions="@string.Join(",", Model.ActionIds)">
+                <partial name="_ProfileActionsCheckboxes" />
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a asp-controller="Home" asp-action="Index" asp-route-module="PROFILES" class="btn btn-secondary">Volver</a>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/profile-form.js" asp-append-version="true"></script>
+}

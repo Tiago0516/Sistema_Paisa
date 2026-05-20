@@ -1,0 +1,112 @@
+@model SistemaPaisa.Web.Models.ModuleGridViewModel
+
+<div class="module-workspace">
+    <div class="module-workspace-toolbar-card content-card">
+        <div class="module-workspace-header">
+            <h1 class="module-workspace-title">@Model.Title</h1>
+            @if (Model.AllowCreate && !string.IsNullOrEmpty(Model.CreateUrl))
+            {
+                <button type="button"
+                        class="btn btn-module-create"
+                        id="btnModuleCreate"
+                        data-create-url="@Model.CreateUrl"
+                        data-create-title="Crear @Model.Title.ToLowerInvariant()">
+                    @Model.CreateLabel
+                </button>
+            }
+        </div>
+
+        <div class="module-workspace-search">
+            <label class="module-search-label" for="moduleQuickSearch">Búsqueda rápida</label>
+            <input type="search"
+                   id="moduleQuickSearch"
+                   class="form-control module-search-input"
+                   placeholder="Buscar..."
+                   autocomplete="off" />
+        </div>
+    </div>
+
+    <div class="module-workspace-grid-card content-card">
+        <div class="module-table-wrap">
+            <table class="table module-table" id="moduleDataTable">
+                <thead>
+                    <tr>
+                        @foreach (var column in Model.Columns)
+                        {
+                            <th>@column.Label</th>
+                        }
+                        @if (Model.Rows.Any(r => r.Actions is not null))
+                        {
+                            <th class="text-end">Acciones</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        @foreach (var column in Model.Columns)
+                        {
+                            <td>@(row.Cells.TryGetValue(column.Key, out var value) ? value : "—")</td>
+                        }
+                        @if (Model.Rows.Any(r => r.Actions is not null))
+                        {
+                            <td class="module-actions-cell text-end">
+                                @if (row.Actions is not null)
+                                {
+                                    <div class="dropdown">
+                                        <button class="btn btn-module-actions"
+                                                type="button"
+                                                data-bs-toggle="dropdown"
+                                                data-bs-display="static"
+                                                data-bs-popper-config='{"strategy":"fixed"}'
+                                                aria-expanded="false"
+                                                aria-label="Acciones">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end module-row-menu">
+                                            @if (Model.AllowView && !string.IsNullOrEmpty(row.Actions.DetailsUrl))
+                                            {
+                                                <li><a class="dropdown-item" href="@row.Actions.DetailsUrl">Ver</a></li>
+                                            }
+                                            @if (Model.AllowEdit && !string.IsNullOrEmpty(row.Actions.EditUrl))
+                                            {
+                                                <li><a class="dropdown-item" href="@row.Actions.EditUrl">Editar</a></li>
+                                            }
+                                            @if (Model.AllowDelete && !string.IsNullOrEmpty(row.Actions.DeleteUrl))
+                                            {
+                                                <li><a class="dropdown-item text-danger" href="@row.Actions.DeleteUrl">Eliminar</a></li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="module-table-footer">
+            <div class="module-footer-left">
+                <label class="module-footer-label" for="modulePageSize">Tamaño de página</label>
+                <select id="modulePageSize" class="form-select form-select-sm module-page-size">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <div class="module-footer-center">
+                <span id="moduleRecordSummary">0 registros</span>
+            </div>
+            <div class="module-footer-right">
+                <button type="button" class="btn btn-module-page" id="modulePageFirst" aria-label="Primera página"><i class="bi bi-chevron-double-left"></i></button>
+                <button type="button" class="btn btn-module-page" id="modulePagePrev" aria-label="Página anterior"><i class="bi bi-chevron-left"></i></button>
+                <span id="modulePageLabel">Página 1 de 1</span>
+                <button type="button" class="btn btn-module-page" id="modulePageNext" aria-label="Página siguiente"><i class="bi bi-chevron-right"></i></button>
+                <button type="button" class="btn btn-module-page" id="modulePageLast" aria-label="Última página"><i class="bi bi-chevron-double-right"></i></button>
+            </div>
+        </div>
+    </div>
+</div>

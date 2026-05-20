@@ -1,8 +1,11 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
-}
+﻿@model SistemaPaisa.Web.Models.WorkspacePageViewModel
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<partial name="_ModuleGrid" model="Model.Grid" />
+
+@section Scripts {
+    <script>
+        window.moduleWorkspace = {
+            activeModule: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ActiveModuleCode))
+        };
+    </script>
+}

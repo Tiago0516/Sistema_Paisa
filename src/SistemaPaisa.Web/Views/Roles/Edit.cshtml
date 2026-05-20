@@ -1,0 +1,48 @@
+@model SistemaPaisa.Application.Features.Roles.Commands.UpdateRole.UpdateRoleCommand
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Editar rol";
+    var profiles = ViewBag.Profiles as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var clients = ViewBag.Clients as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+}
+
+<h1 class="h3 mb-3">Editar rol</h1>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label">Nombre</label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">Descripción</label>
+        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="ProfileId" class="form-label">Perfil</label>
+        <select asp-for="ProfileId" asp-items="profiles" class="form-select">
+            <option value="">Seleccione un perfil</option>
+        </select>
+        <span asp-validation-for="ProfileId" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="ClientId" class="form-label">Cliente</label>
+        <select asp-for="ClientId" asp-items="clients" class="form-select">
+            <option value="">Seleccione un cliente</option>
+        </select>
+        <span asp-validation-for="ClientId" class="text-danger"></span>
+    </div>
+    <div class="mb-3 form-check">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label">Activo</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a asp-controller="Home" asp-action="Index" asp-route-module="ROLES" class="btn btn-secondary">Volver</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

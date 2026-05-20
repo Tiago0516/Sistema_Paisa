@@ -1,0 +1,22 @@
+@model SistemaPaisa.Application.DTOs.ProfileDto
+
+@{
+    ViewData["Title"] = "Eliminar perfil";
+}
+
+<div class="content-card">
+    <h1 class="h4 mb-3">Eliminar perfil</h1>
+    <p>¿Confirma que desea eliminar el perfil <strong>@Model.Name</strong>?</p>
+    <dl class="row">
+        <dt class="col-sm-3">Módulo</dt>
+        <dd class="col-sm-9">@Model.ModuleName</dd>
+        <dt class="col-sm-3">Acciones</dt>
+        <dd class="col-sm-9">@Model.ActionsSummary</dd>
+    </dl>
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-danger">Eliminar</button>
+        <a asp-controller="Home" asp-action="Index" asp-route-module="PROFILES" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>

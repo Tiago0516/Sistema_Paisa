@@ -1,0 +1,28 @@
+@using SistemaPaisa.Application.Features.AppActions.Queries.GetActionsByModule
+@{
+    var actions = ViewData["ModuleActions"] as IEnumerable<ActionOptionDto> ?? Enumerable.Empty<ActionOptionDto>();
+    var selected = ViewData["SelectedActionIds"] as IEnumerable<int> ?? Model as IEnumerable<int> ?? [];
+    var selectedSet = selected.ToHashSet();
+}
+
+@if (!actions.Any())
+{
+    <p class="text-muted small mb-0">Seleccione un módulo para ver sus acciones.</p>
+}
+else
+{
+    @foreach (var action in actions)
+    {
+        <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   name="ActionIds"
+                   value="@action.Id"
+                   id="action_@action.Id"
+                   @(selectedSet.Contains(action.Id) ? "checked" : null) />
+            <label class="form-check-label" for="action_@action.Id">
+                @action.Name <span class="text-muted">(@action.Code)</span>
+            </label>
+        </div>
+    }
+}

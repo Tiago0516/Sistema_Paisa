@@ -1,0 +1,21 @@
+@{
+    var modules = ViewBag.Modules as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [];
+    var selectedIds = ViewData["SelectedModuleIds"] as IEnumerable<int> ?? [];
+    var selectedSet = selectedIds.ToHashSet();
+}
+
+<div class="profile-modules-list">
+    @foreach (var module in modules)
+    {
+        var moduleId = int.Parse(module.Value!);
+        <div class="form-check">
+            <input class="form-check-input profile-module-checkbox"
+                   type="checkbox"
+                   name="ModuleIds"
+                   value="@moduleId"
+                   id="module_@moduleId"
+                   @(selectedSet.Contains(moduleId) ? "checked" : "") />
+            <label class="form-check-label" for="module_@moduleId">@module.Text</label>
+        </div>
+    }
+</div>

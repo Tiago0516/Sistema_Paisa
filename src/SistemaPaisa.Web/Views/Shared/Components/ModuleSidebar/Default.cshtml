@@ -1,0 +1,40 @@
+@model SistemaPaisa.Application.DTOs.NavigationMenuDto
+
+@{
+    var activeModuleCode = ViewData["ActiveModuleCode"] as string ?? string.Empty;
+    var activeModule = Model.Modules.FirstOrDefault(m =>
+        string.Equals(m.Code, activeModuleCode, StringComparison.OrdinalIgnoreCase));
+    var panelTitle = activeModule?.Name ?? "Menú";
+}
+
+<aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-rail">
+        <button type="button"
+                class="sidebar-menu-trigger"
+                id="sidebarMenuTrigger"
+                aria-label="Abrir menú de módulos"
+                aria-expanded="false"
+                aria-controls="sidebarPanel">
+            <i class="bi bi-list"></i>
+        </button>
+    </div>
+
+    <div class="sidebar-panel" id="sidebarPanel" role="navigation" aria-label="Módulos">
+        <div class="sidebar-panel-header">
+            <span id="sidebarPanelTitle">@panelTitle</span>
+        </div>
+        <nav class="sidebar-panel-nav">
+            @foreach (var module in Model.Modules)
+            {
+                var isActive = string.Equals(module.Code, activeModuleCode, StringComparison.OrdinalIgnoreCase);
+                var workspaceUrl = Url.Action("Index", "Home", new { module = module.Code })!;
+                <a class="sidebar-module-link @(isActive ? "active" : "")"
+                   href="@workspaceUrl"
+                   data-module-code="@module.Code">
+                    <span class="sidebar-icon"><i class="bi @module.Icon"></i></span>
+                    <span>@module.Name</span>
+                </a>
+            }
+        </nav>
+    </div>
+</aside>
