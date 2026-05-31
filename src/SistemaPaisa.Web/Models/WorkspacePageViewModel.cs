@@ -17,9 +17,13 @@ public record ModuleGridViewModel
     public bool AllowView { get; init; }
     public bool AllowEdit { get; init; }
     public bool AllowDelete { get; init; }
+    public string? ApiBaseUrl { get; init; }
+    public ModuleGridActionUrlTemplates? ActionUrlTemplates { get; init; }
     public IReadOnlyList<ModuleGridColumn> Columns { get; init; } = [];
     public IReadOnlyList<ModuleGridRow> Rows { get; init; } = [];
 }
+
+public record ModuleGridActionUrlTemplates(string? Details, string? Edit, string? Delete);
 
 public class ModuleGridColumn
 {

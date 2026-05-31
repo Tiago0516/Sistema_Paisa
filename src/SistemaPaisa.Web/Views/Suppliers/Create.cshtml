@@ -6,22 +6,18 @@
 
 <h1 class="h3 mb-3">Crear proveedor</h1>
 
-<form asp-action="Create" method="post">
-    @Html.AntiForgeryToken()
+<form data-api-url="/api/suppliers"
+      data-api-redirect="@ModuleRoutes.GetWorkspacePath("SUPPLIERS")">
     <div class="mb-3">
         <label asp-for="Name" class="form-label"></label>
         <input asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
+        <span class="text-danger" data-api-error asp-validation-for="Name"></span>
     </div>
     <div class="mb-3">
         <label asp-for="Email" class="form-label"></label>
         <input asp-for="Email" class="form-control" type="email" />
-        <span asp-validation-for="Email" class="text-danger"></span>
+        <span class="text-danger" data-api-error asp-validation-for="Email"></span>
     </div>
     <button type="submit" class="btn btn-primary">Guardar</button>
     <a href="@ModuleRoutes.GetWorkspacePath("SUPPLIERS")" class="btn btn-secondary">Volver</a>
 </form>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}

@@ -35,6 +35,11 @@ public sealed class RequireModuleAccessFilter : IAsyncAuthorizationFilter
         if (allowed)
             return;
 
-        context.Result = new RedirectToActionResult("AccessDenied", "Account", null);
+        context.Result = IsApiRequest(context)
+            ? new ObjectResult(new { error = "No tiene permiso para esta operación." }) { StatusCode = StatusCodes.Status403Forbidden }
+            : new RedirectToActionResult("AccessDenied", "Account", null);
     }
+
+    private static bool IsApiRequest(AuthorizationFilterContext context) =>
+        context.HttpContext.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase);
 }

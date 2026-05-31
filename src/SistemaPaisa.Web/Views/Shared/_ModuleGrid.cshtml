@@ -1,4 +1,9 @@
 @model SistemaPaisa.Web.Models.ModuleGridViewModel
+@{
+    var showActions = Model.AllowView || Model.AllowEdit || Model.AllowDelete;
+    var columnCount = Model.Columns.Count + (showActions ? 1 : 0);
+    var usesApi = !string.IsNullOrEmpty(Model.ApiBaseUrl);
+}
 
 <div class="module-workspace">
     <div class="module-workspace-toolbar-card content-card">
@@ -28,20 +33,37 @@
 
     <div class="module-workspace-grid-card content-card">
         <div class="module-table-wrap">
-            <table class="table module-table" id="moduleDataTable">
+            <table class="table module-table"
+                   id="moduleDataTable"
+                   data-api-base="@(Model.ApiBaseUrl ?? "")"
+                   data-column-keys="@string.Join(",", Model.Columns.Select(c => c.Key))"
+                   data-url-details="@(Model.ActionUrlTemplates?.Details ?? "")"
+                   data-url-edit="@(Model.ActionUrlTemplates?.Edit ?? "")"
+                   data-url-delete="@(Model.ActionUrlTemplates?.Delete ?? "")"
+                   data-allow-view="@(Model.AllowView ? "true" : "false")"
+                   data-allow-edit="@(Model.AllowEdit ? "true" : "false")"
+                   data-allow-delete="@(Model.AllowDelete ? "true" : "false")">
                 <thead>
                     <tr>
                         @foreach (var column in Model.Columns)
                         {
                             <th>@column.Label</th>
                         }
-                        @if (Model.Rows.Any(r => r.Actions is not null))
+                        @if (showActions)
                         {
                             <th class="text-end">Acciones</th>
                         }
                     </tr>
                 </thead>
                 <tbody>
+                @if (usesApi)
+                {
+                    <tr id="moduleGridLoadingRow">
+                        <td colspan="@columnCount" class="text-center text-muted py-4">Cargando...</td>
+                    </tr>
+                }
+                else
+                {
                 @foreach (var row in Model.Rows)
                 {
                     <tr>
@@ -49,7 +71,7 @@
                         {
                             <td>@(row.Cells.TryGetValue(column.Key, out var value) ? value : "—")</td>
                         }
-                        @if (Model.Rows.Any(r => r.Actions is not null))
+                        @if (showActions)
                         {
                             <td class="module-actions-cell text-end">
                                 @if (row.Actions is not null)
@@ -83,6 +105,7 @@
                             </td>
                         }
                     </tr>
+                }
                 }
                 </tbody>
             </table>

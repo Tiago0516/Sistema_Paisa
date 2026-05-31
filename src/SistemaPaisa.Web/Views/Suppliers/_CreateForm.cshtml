@@ -1,20 +1,19 @@
 @model SistemaPaisa.Application.Features.Suppliers.Commands.CreateSupplier.CreateSupplierCommand
 
-<form asp-controller="Suppliers"
-      asp-action="Create"
-      method="post"
+<form method="post"
       class="module-modal-form"
-      data-modal-form="true">
-    @Html.AntiForgeryToken()
+      data-modal-form="true"
+      data-api-url="/api/suppliers"
+      data-api-reload-grid="true">
     <div class="mb-3">
         <label asp-for="Name" class="form-label"></label>
         <input asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
+        <span class="text-danger" data-api-error asp-validation-for="Name"></span>
     </div>
     <div class="mb-3">
         <label asp-for="Email" class="form-label"></label>
         <input asp-for="Email" class="form-control" type="email" />
-        <span asp-validation-for="Email" class="text-danger"></span>
+        <span class="text-danger" data-api-error asp-validation-for="Email"></span>
     </div>
     <div class="d-flex justify-content-end gap-2 pt-2">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
