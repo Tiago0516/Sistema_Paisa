@@ -17,6 +17,7 @@
     initSidebarHover();
     initModuleGrid();
     initModuleCreateModal();
+    initApiForms();
 })();
 
 function initSidebarHover() {
@@ -92,6 +93,26 @@ function bindModalForm(container, modal) {
         window.jQuery.validator.unobtrusive.parse(form);
     }
 
+    bindFormSubmit(form, {
+        onSuccess: () => {
+            modal.hide();
+            if (form.dataset.apiReloadGrid === 'true' && window.reloadApiModuleGrid) {
+                window.reloadApiModuleGrid();
+            } else {
+                window.location.reload();
+            }
+        },
+        onValidationHtml: (html) => {
+            container.innerHTML = html;
+            bindModalForm(container, modal);
+        },
+        onError: () => {
+            container.innerHTML = '<p class="text-danger mb-0">Error al guardar. Intente de nuevo.</p>';
+        }
+    });
+}
+
+function bindFormSubmit(form, handlers) {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -99,6 +120,29 @@ function bindModalForm(container, modal) {
         if (submitBtn) submitBtn.disabled = true;
 
         try {
+            if (form.dataset.apiUrl) {
+                const payload = readApiFormPayload(form);
+                const method = form.dataset.apiMethod || 'POST';
+                const { response, data } = await window.SistemaPaisaApi.apiRequest(form.dataset.apiUrl, {
+                    method,
+                    body: payload
+                });
+
+                if (response.ok) {
+                    handlers.onSuccess?.(data);
+                    return;
+                }
+
+                if (response.status === 400 && data?.errors) {
+                    window.SistemaPaisaApi.applyValidationErrors(form, data.errors);
+                    return;
+                }
+
+                const message = data?.error || data?.title || 'No se pudo guardar.';
+                alert(message);
+                return;
+            }
+
             const response = await fetch(form.action, {
                 method: 'POST',
                 body: new FormData(form),
@@ -113,21 +157,88 @@ function bindModalForm(container, modal) {
             if (contentType.includes('application/json')) {
                 const data = await response.json();
                 if (data.success) {
-                    modal.hide();
-                    window.location.reload();
+                    handlers.onSuccess?.(data);
                     return;
                 }
             }
 
             const html = await response.text();
-            container.innerHTML = html;
-            bindModalForm(container, modal);
+            handlers.onValidationHtml?.(html);
         } catch {
-            container.innerHTML = '<p class="text-danger mb-0">Error al guardar. Intente de nuevo.</p>';
+            handlers.onError?.();
         } finally {
             if (submitBtn) submitBtn.disabled = false;
         }
     });
+}
+
+function readApiFormPayload(form) {
+    const name = form.querySelector('[name="Name"]')?.value?.trim() ?? '';
+    const email = form.querySelector('[name="Email"]')?.value?.trim() ?? '';
+    const isActiveEl = form.querySelector('[name="IsActive"]');
+    const payload = { name, email };
+    if (isActiveEl) {
+        payload.isActive = isActiveEl.type === 'checkbox' ? isActiveEl.checked : isActiveEl.value === 'true';
+    }
+    return payload;
+}
+
+function initApiForms() {
+    document.querySelectorAll('form[data-api-url]:not([data-modal-form])').forEach(form => {
+        bindFormSubmit(form, {
+            onSuccess: () => {
+                const redirect = form.dataset.apiRedirect;
+                if (redirect) {
+                    window.location.href = redirect;
+                } else {
+                    window.location.reload();
+                }
+            },
+            onError: () => alert('Error al guardar. Intente de nuevo.')
+        });
+    });
+
+    document.querySelectorAll('[data-api-load]').forEach(el => {
+        loadApiFormData(el);
+    });
+}
+
+async function loadApiFormData(container) {
+    const loadUrl = container.dataset.apiLoad;
+    if (!loadUrl) return;
+
+    try {
+        const { response, data } = await window.SistemaPaisaApi.apiRequest(loadUrl);
+        if (!response.ok) {
+            throw new Error(data?.error || 'No se pudo cargar el registro.');
+        }
+
+        const nameInput = container.querySelector('[name="Name"]');
+        const emailInput = container.querySelector('[name="Email"]');
+        const activeInput = container.querySelector('[name="IsActive"]');
+        if (nameInput) nameInput.value = data.name ?? '';
+        if (emailInput) emailInput.value = data.email ?? '';
+        if (activeInput && activeInput.type === 'checkbox') {
+            activeInput.checked = !!data.isActive;
+        }
+
+        container.querySelectorAll('[data-api-field]').forEach(el => {
+            const field = el.dataset.apiField;
+            if (field === 'name') el.textContent = data.name ?? '';
+            if (field === 'email') el.textContent = data.email ?? '';
+            if (field === 'active') el.textContent = data.isActive ? 'Sí' : 'No';
+        });
+    } catch (err) {
+        const msg = err.message || 'Error al cargar.';
+        const alertEl = container.closest('main')?.querySelector('[data-api-load-error]')
+            || document.querySelector('[data-api-load-error]');
+        if (alertEl) {
+            alertEl.textContent = msg;
+            alertEl.classList.remove('d-none');
+        } else {
+            alert(msg);
+        }
+    }
 }
 
 function initModuleGrid() {
@@ -144,7 +255,7 @@ function initModuleGrid() {
     const btnNext = document.getElementById('modulePageNext');
     const btnLast = document.getElementById('modulePageLast');
 
-    const allRows = Array.from(tbody.querySelectorAll('tr'));
+    let allRows = Array.from(tbody.querySelectorAll('tr'));
     let filteredRows = [...allRows];
     let currentPage = 1;
 
@@ -212,5 +323,18 @@ function initModuleGrid() {
         menu.addEventListener('click', (e) => e.stopPropagation());
     });
 
+    window.refreshModuleGrid = function () {
+        allRows = Array.from(tbody.querySelectorAll('tr'))
+            .filter(row => row.isConnected && row.id !== 'moduleGridLoadingRow');
+        filteredRows = [...allRows];
+        currentPage = 1;
+        render();
+    };
+
     render();
+
+    const apiBase = (table.dataset.apiBase || '').trim();
+    if (apiBase && typeof window.reloadApiModuleGrid === 'function') {
+        window.reloadApiModuleGrid();
+    }
 }
