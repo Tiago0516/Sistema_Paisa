@@ -6,14 +6,14 @@ namespace SistemaPaisa.Infrastructure.Repositories;
 
 public class RolePermissionRepository : IRolePermissionRepository
 {
-    private readonly AppDbContext _context;
-    private readonly IModuleActionRepository _moduleActionRepository;
-    private readonly IProfileModuleRepository _profileModuleRepository;
-    private readonly IProfileRoleRepository _profileRoleRepository;
+    private const int AdminRoleId = 1;
+    private const int InventoryRoleId = 2;
+    private static readonly HashSet<string> InventoryModuleCodes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CATEGORIES",
+        "PRODUCTS"
+    };
 
-    public RolePermissionRepository(
-        AppDbContext context,
-        IModuleActionRepository moduleActionRepository,
     private readonly AppDbContext _context;
     private readonly IModuleActionRepository _moduleActionRepository;
     private readonly IProfileModuleRepository _profileModuleRepository;
@@ -43,33 +43,21 @@ public class RolePermissionRepository : IRolePermissionRepository
             return null;
 
         var profileId = await _profileRoleRepository.GetProfileIdByRoleIdAsync(roleId, cancellationToken);
+
+        if (role.Id == AdminRoleId)
+            return await GetCatalogPermissionsAsync(role.Id, profileId, null, cancellationToken);
+
+        if (role.Id == InventoryRoleId)
+            return await GetCatalogPermissionsAsync(role.Id, profileId, InventoryModuleCodes, cancellationToken);
+
         if (profileId is null)
-        if (profile is null)
             return null;
+
+        var profile = await _context.Profiles
+            .AsNoTracking()
+            .Include(p => p.ProfileActions)
+                .ThenInclude(pa => pa.Action)
             .FirstOrDefaultAsync(p => p.Id == profileId && p.IsActive, cancellationToken);
-        var profileModules = await _profileModuleRepository.GetByProfileIdAsync(
-            profile.Id,
-            cancellationToken);
-
-        if (profileModules.Count == 0 && profile.ModuleId > 0)
-        {
-            var fallback = await _context.Modules
-                .AsNoTracking()
-                .Where(m => m.Id == profile.ModuleId && m.IsActive)
-                .Select(m => new ProfileModuleInfo
-                {
-                    ModuleId = m.Id,
-                    Code = m.Code,
-                    Name = m.Name,
-                    Description = m.Description
-                })
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (fallback is not null)
-                profileModules = [fallback];
-        }
-
-        var permittedActions = ResolvePermittedActions(profile);
 
         if (profile is null)
             return null;
@@ -78,54 +66,93 @@ public class RolePermissionRepository : IRolePermissionRepository
             profile.Id,
             cancellationToken);
 
-            var actions = catalogActions
-                .Where(a => IsActionPermitted(permittedActions, a.Id))
-                .Select(a => new PermittedActionData
-                {
-                    Id = a.Id,
-                    Code = a.Code,
-                    Name = a.Name
-                })
-                .ToList();
-
-            if (actions.Count == 0)
-                continue;
+        var permittedActionIds = profile.ProfileActions.Count > 0
             ? profile.ProfileActions
                 .Where(pa => pa.Action.IsActive)
                 .Select(pa => pa.ActionId)
                 .ToHashSet()
             : null;
 
-                Actions = actions
-            });
-        }
+        var modules = new List<PermittedModuleData>();
 
+        foreach (var profileModule in profileModules)
+        {
             var catalogActions = await _moduleActionRepository.GetByModuleIdAsync(
                 profileModule.ModuleId,
                 cancellationToken);
 
-            ProfileModuleId = profile.ModuleId,
+            var actions = ResolveModuleActions(catalogActions, permittedActionIds);
 
             modules.Add(new PermittedModuleData
             {
                 Id = profileModule.ModuleId,
-    private static List<ActionEntity> ResolvePermittedActions(Profile profile)
+                Code = profileModule.Code,
+                Name = profileModule.Name,
+                Icon = profileModule.Icon,
                 ControllerName = profileModule.ControllerName,
-        if (profile.ProfileActions.Count > 0)
+                CreateActionName = profileModule.CreateActionName,
+                IsLanding = profileModule.IsLanding,
+                Actions = actions
+            });
+        }
+
+        return new RolePermissionData
         {
-            return profile.ProfileActions
-                .Select(pa => pa.Action)
-                .Where(a => a.IsActive)
+            RoleId = role.Id,
+            ProfileId = profile.Id,
+            ProfileModuleId = profileModules.FirstOrDefault()?.ModuleId ?? profile.ModuleId,
+            Modules = modules
+        };
+    }
+
+    private async Task<RolePermissionData> GetCatalogPermissionsAsync(
+        int roleId,
+        int? profileId,
+        IReadOnlySet<string>? allowedModuleCodes,
+        CancellationToken cancellationToken)
+    {
+        var catalogModules = await _context.Modules
+            .AsNoTracking()
+            .Where(m => m.IsActive)
+            .OrderBy(m => m.Name)
+            .ToListAsync(cancellationToken);
+
+        if (allowedModuleCodes is not null)
+        {
+            catalogModules = catalogModules
+                .Where(m => allowedModuleCodes.Contains(m.Code))
                 .ToList();
         }
 
-        return [];
+        var modules = new List<PermittedModuleData>();
+
+        foreach (var module in catalogModules)
+        {
+            var catalogActions = await _moduleActionRepository.GetByModuleIdAsync(
+                module.Id,
+                cancellationToken);
+
+            modules.Add(new PermittedModuleData
+            {
+                Id = module.Id,
+                Code = module.Code,
+                Name = module.Name,
+                Icon = module.Icon,
+                ControllerName = module.ControllerName,
+                CreateActionName = module.CreateActionName,
+                IsLanding = module.IsLanding,
+                Actions = ResolveModuleActions(catalogActions, null)
+            });
+        }
+
+        return new RolePermissionData
+        {
+            RoleId = roleId,
+            ProfileId = profileId ?? 0,
+            ProfileModuleId = modules.FirstOrDefault()?.Id ?? 0,
+            Modules = modules
+        };
     }
-
-    private static bool IsActionPermitted(IReadOnlyList<ActionEntity> permittedActions, int actionId) =>
-        permittedActions.Count == 0 || permittedActions.Any(a => a.Id == actionId);
-}
-
 
     private static List<PermittedActionData> ResolveModuleActions(
         IReadOnlyList<ModuleActionInfo> catalogActions,

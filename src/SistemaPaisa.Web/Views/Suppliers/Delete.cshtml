@@ -1,0 +1,22 @@
+@model SistemaPaisa.Application.DTOs.SupplierDto
+
+@{
+    ViewData["Title"] = "Eliminar proveedor";
+}
+
+<h1 class="h3 mb-3 text-danger">Eliminar proveedor</h1>
+
+<p>¿Está seguro de que desea eliminar este proveedor?</p>
+
+<dl class="row">
+    <dt class="col-sm-2">Nombre</dt>
+    <dd class="col-sm-10">@Model.Name</dd>
+    <dt class="col-sm-2">Correo</dt>
+    <dd class="col-sm-10">@Model.Email</dd>
+</dl>
+
+<form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+    @Html.AntiForgeryToken()
+    <button type="submit" class="btn btn-danger">Eliminar</button>
+    <a href="@ModuleRoutes.GetWorkspacePath("SUPPLIERS")" class="btn btn-secondary">Cancelar</a>
+</form>

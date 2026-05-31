@@ -52,7 +52,7 @@ function initModuleCreateModal() {
         const baseUrl = createBtn.dataset.createUrl;
         if (!baseUrl) return;
 
-        const supportsModal = /\/(Products|Categories|Modules|AppActions|Roles|Profiles)\/Create|\/Account\/Register/i.test(baseUrl);
+        const supportsModal = /\/(Products|Categories|Suppliers|Modules|AppActions|Roles|Profiles)\/Create|\/Account\/Register/i.test(baseUrl);
         if (!supportsModal) {
             window.location.href = baseUrl;
             return;

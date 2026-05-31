@@ -1,4 +1,5 @@
 using MediatR;
+using SistemaPaisa.Application.Common.Navigation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SistemaPaisa.Application.Features.AppActions.Queries.GetActionsByModule;
@@ -7,19 +8,22 @@ using SistemaPaisa.Application.Features.Profiles.Commands.CreateProfile;
 using SistemaPaisa.Application.Features.Profiles.Commands.DeleteProfile;
 using SistemaPaisa.Application.Features.Profiles.Commands.UpdateProfile;
 using SistemaPaisa.Application.Features.Profiles.Queries.GetProfileById;
+using SistemaPaisa.Application.Common.Permissions;
+using SistemaPaisa.Web.Authorization;
 using SistemaPaisa.Web.Extensions;
 
 namespace SistemaPaisa.Web.Controllers;
 
+[Route("profiles")]
+[RequireModuleAccess("PROFILES")]
 public class ProfilesController : Controller
 {
     private readonly IMediator _mediator;
 
     public ProfilesController(IMediator mediator) => _mediator = mediator;
 
-    public IActionResult Index() =>
-        RedirectToAction("Index", "Home", new { module = "PROFILES" });
-
+    [HttpGet("create")]
+    [RequireModuleAccess("PROFILES", PermissionCodes.Create)]
     public async Task<IActionResult> Create()
     {
         await LoadModulesAsync();
@@ -27,7 +31,8 @@ public class ProfilesController : Controller
         return Request.IsModalRequest() ? PartialView("_CreateForm", command) : View(command);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost("create"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("PROFILES", PermissionCodes.Create)]
     public async Task<IActionResult> Create(CreateProfileCommand command)
     {
         if (!ModelState.IsValid)
@@ -42,9 +47,11 @@ public class ProfilesController : Controller
         if (Request.IsModalRequest())
             return Json(new { success = true });
 
-        return RedirectToAction("Index", "Home", new { module = "PROFILES" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("PROFILES"));
     }
 
+    [HttpGet("edit/{id:int}")]
+    [RequireModuleAccess("PROFILES", PermissionCodes.Manage)]
     public async Task<IActionResult> Edit(int id)
     {
         var profile = await _mediator.Send(new GetProfileByIdQuery(id));
@@ -64,7 +71,8 @@ public class ProfilesController : Controller
         return View(command);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost("edit/{id:int}"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("PROFILES", PermissionCodes.Manage)]
     public async Task<IActionResult> Edit(UpdateProfileCommand command)
     {
         if (!ModelState.IsValid)
@@ -75,9 +83,11 @@ public class ProfilesController : Controller
 
         var updated = await _mediator.Send(command);
         if (!updated) return NotFound();
-        return RedirectToAction("Index", "Home", new { module = "PROFILES" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("PROFILES"));
     }
 
+    [HttpGet("delete/{id:int}")]
+    [RequireModuleAccess("PROFILES", PermissionCodes.Manage)]
     public async Task<IActionResult> Delete(int id)
     {
         var profile = await _mediator.Send(new GetProfileByIdQuery(id));
@@ -85,13 +95,15 @@ public class ProfilesController : Controller
         return View(profile);
     }
 
-    [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+    [HttpPost("delete/{id:int}"), ActionName("Delete"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("PROFILES", PermissionCodes.Manage)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         await _mediator.Send(new DeleteProfileCommand(id));
-        return RedirectToAction("Index", "Home", new { module = "PROFILES" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("PROFILES"));
     }
 
+    [HttpGet("details/{id:int}")]
     public async Task<IActionResult> Details(int id)
     {
         var profile = await _mediator.Send(new GetProfileByIdQuery(id));
@@ -99,7 +111,7 @@ public class ProfilesController : Controller
         return View(profile);
     }
 
-    [HttpGet]
+    [HttpGet("actions-by-module")]
     public async Task<IActionResult> ActionsByModule(int moduleId)
     {
         var actions = await _mediator.Send(new GetActionsByModuleQuery(moduleId));

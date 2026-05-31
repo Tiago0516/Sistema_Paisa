@@ -1,4 +1,5 @@
 using MediatR;
+using SistemaPaisa.Application.Common.Navigation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SistemaPaisa.Application.Features.Clients.Queries.GetAllClients;
@@ -7,19 +8,22 @@ using SistemaPaisa.Application.Features.Roles.Commands.CreateRole;
 using SistemaPaisa.Application.Features.Roles.Commands.DeleteRole;
 using SistemaPaisa.Application.Features.Roles.Commands.UpdateRole;
 using SistemaPaisa.Application.Features.Roles.Queries.GetRoleById;
+using SistemaPaisa.Application.Common.Permissions;
+using SistemaPaisa.Web.Authorization;
 using SistemaPaisa.Web.Extensions;
 
 namespace SistemaPaisa.Web.Controllers;
 
+[Route("roles")]
+[RequireModuleAccess("ROLES")]
 public class RolesController : Controller
 {
     private readonly IMediator _mediator;
 
     public RolesController(IMediator mediator) => _mediator = mediator;
 
-    public IActionResult Index() =>
-        RedirectToAction("Index", "Home", new { module = "ROLES" });
-
+    [HttpGet("create")]
+    [RequireModuleAccess("ROLES", PermissionCodes.Create)]
     public async Task<IActionResult> Create()
     {
         await LoadFormDataAsync();
@@ -27,7 +31,8 @@ public class RolesController : Controller
         return Request.IsModalRequest() ? PartialView("_CreateForm", command) : View(command);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost("create"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("ROLES", PermissionCodes.Create)]
     public async Task<IActionResult> Create(CreateRoleCommand command)
     {
         if (!ModelState.IsValid)
@@ -42,9 +47,11 @@ public class RolesController : Controller
         if (Request.IsModalRequest())
             return Json(new { success = true });
 
-        return RedirectToAction("Index", "Home", new { module = "ROLES" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("ROLES"));
     }
 
+    [HttpGet("edit/{id:int}")]
+    [RequireModuleAccess("ROLES", PermissionCodes.Manage)]
     public async Task<IActionResult> Edit(int id)
     {
         var role = await _mediator.Send(new GetRoleByIdQuery(id));
@@ -63,7 +70,8 @@ public class RolesController : Controller
         return View(command);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost("edit/{id:int}"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("ROLES", PermissionCodes.Manage)]
     public async Task<IActionResult> Edit(UpdateRoleCommand command)
     {
         if (!ModelState.IsValid)
@@ -74,9 +82,11 @@ public class RolesController : Controller
 
         var updated = await _mediator.Send(command);
         if (!updated) return NotFound();
-        return RedirectToAction("Index", "Home", new { module = "ROLES" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("ROLES"));
     }
 
+    [HttpGet("delete/{id:int}")]
+    [RequireModuleAccess("ROLES", PermissionCodes.Manage)]
     public async Task<IActionResult> Delete(int id)
     {
         var role = await _mediator.Send(new GetRoleByIdQuery(id));
@@ -84,13 +94,15 @@ public class RolesController : Controller
         return View(role);
     }
 
-    [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+    [HttpPost("delete/{id:int}"), ActionName("Delete"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("ROLES", PermissionCodes.Manage)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         await _mediator.Send(new DeleteRoleCommand(id));
-        return RedirectToAction("Index", "Home", new { module = "ROLES" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("ROLES"));
     }
 
+    [HttpGet("details/{id:int}")]
     public async Task<IActionResult> Details(int id)
     {
         var role = await _mediator.Send(new GetRoleByIdQuery(id));

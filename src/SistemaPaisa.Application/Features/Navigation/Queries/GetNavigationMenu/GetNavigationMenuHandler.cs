@@ -1,44 +1,65 @@
 using MediatR;
+using SistemaPaisa.Application.Common.ModuleActions;
 using SistemaPaisa.Application.Common.Navigation;
-using SistemaPaisa.Application.Common.Permissions;
+using SistemaPaisa.Application.Common.ProfileModules;
+using SistemaPaisa.Application.Common.ProfileRoles;
 using SistemaPaisa.Application.DTOs;
 
 namespace SistemaPaisa.Application.Features.Navigation.Queries.GetNavigationMenu;
 
 public class GetNavigationMenuHandler : IRequestHandler<GetNavigationMenuQuery, NavigationMenuDto>
 {
-    private readonly IPermissionService _permissionService;
+    private readonly IProfileRoleService _profileRoleService;
+    private readonly IProfileModuleService _profileModuleService;
+    private readonly IModuleActionService _moduleActionService;
 
-    public GetNavigationMenuHandler(IPermissionService permissionService) =>
-        _permissionService = permissionService;
+    public GetNavigationMenuHandler(
+        IProfileRoleService profileRoleService,
+        IProfileModuleService profileModuleService,
+        IModuleActionService moduleActionService)
+    {
+        _profileRoleService = profileRoleService;
+        _profileModuleService = profileModuleService;
+        _moduleActionService = moduleActionService;
+    }
 
     public async Task<NavigationMenuDto> Handle(
         GetNavigationMenuQuery request,
         CancellationToken cancellationToken)
     {
-        var permissions = await _permissionService.GetCurrentPermissionsAsync(cancellationToken);
+        _ = await _profileRoleService.GetForCurrentUserAsync(cancellationToken);
 
-        if (permissions is null)
+        var profileModules = await _profileModuleService.GetForCurrentUserAsync(cancellationToken);
+        if (profileModules.Count == 0)
             return new NavigationMenuDto { Modules = [] };
 
-        var items = permissions.Modules.Select(m => new NavigationModuleDto
+        var items = new List<NavigationModuleDto>();
+
+        foreach (var module in profileModules)
         {
-            Id = m.Id,
-            Name = m.Name,
-            Code = m.Code,
-            Icon = m.Icon ?? NavigationUrlResolver.DefaultIcon,
-            Url = NavigationUrlResolver.ResolveModuleUrl(m.Code),
-            ControllerName = m.ControllerName,
-            CreateActionName = m.CreateActionName,
-            IsLanding = m.IsLanding,
-            Actions = m.Actions.Select(a => new NavigationActionDto
+            var actions = await _moduleActionService.GetForCurrentUserByModuleCodeAsync(
+                module.Code,
+                cancellationToken);
+
+            items.Add(new NavigationModuleDto
             {
-                Id = a.Id,
-                Name = a.Name,
-                Code = a.Code,
-                Url = NavigationUrlResolver.ResolveActionUrl(m.Code, a.Code)
-            }).ToList()
-        }).ToList();
+                Id = module.ModuleId,
+                Name = module.Name,
+                Code = module.Code,
+                Icon = module.Icon ?? NavigationUrlResolver.DefaultIcon,
+                Url = NavigationUrlResolver.ResolveModuleUrl(module.Code),
+                ControllerName = module.ControllerName,
+                CreateActionName = module.CreateActionName,
+                IsLanding = module.IsLanding,
+                Actions = actions.Select(a => new NavigationActionDto
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    Code = a.Code,
+                    Url = NavigationUrlResolver.ResolveActionUrl(module.Code, a.Code)
+                }).ToList()
+            });
+        }
 
         return new NavigationMenuDto { Modules = items };
     }

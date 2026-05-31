@@ -1,18 +1,26 @@
 using System.Security.Claims;
-using MediatR;
+using SistemaPaisa.Application.Common.Navigation;
 using Microsoft.AspNetCore.Mvc;
 using SistemaPaisa.Application.Common;
+using SistemaPaisa.Application.Common.Users;
 using SistemaPaisa.Application.Features.Users.Commands.RegisterUser;
+using SistemaPaisa.Application.Common.Permissions;
+using SistemaPaisa.Web.Authorization;
 using SistemaPaisa.Web.Extensions;
 
 namespace SistemaPaisa.Web.Controllers;
 
+[Route("users")]
+[RequireModuleAccess("USERS")]
 public class UsersController : Controller
 {
-    private readonly IMediator _mediator;
+    private readonly IUserRegistrationService _userRegistrationService;
 
-    public UsersController(IMediator mediator) => _mediator = mediator;
+    public UsersController(IUserRegistrationService userRegistrationService) =>
+        _userRegistrationService = userRegistrationService;
 
+    [HttpGet("register")]
+    [RequireModuleAccess("USERS", PermissionCodes.Register)]
     public IActionResult Register()
     {
         var command = new RegisterUserCommand();
@@ -22,7 +30,8 @@ public class UsersController : Controller
         return View(command);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost("register"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("USERS", PermissionCodes.Register)]
     public async Task<IActionResult> Register(RegisterUserCommand command)
     {
         if (!ModelState.IsValid)
@@ -35,7 +44,7 @@ public class UsersController : Controller
         command.ClientId = GetClientId();
         command.CreatedBy = User.Identity?.Name ?? User.FindFirst(ClaimTypes.Email)?.Value ?? "system";
 
-        var result = await _mediator.Send(command);
+        var result = await _userRegistrationService.RegisterAsync(command);
 
         if (!result.Success)
         {
@@ -49,7 +58,7 @@ public class UsersController : Controller
             return Json(new { success = true });
 
         TempData["SuccessMessage"] = "Usuario registrado correctamente.";
-        return RedirectToAction("Index", "Home", new { module = "USERS" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("USERS"));
     }
 
     private int GetClientId()

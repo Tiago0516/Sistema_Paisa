@@ -1,24 +1,55 @@
-using System.Security.Claims;
 using MediatR;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SistemaPaisa.Application.Common;
+using SistemaPaisa.Application.Common.Auth;
+using SistemaPaisa.Application.Common.ModuleActions;
+using SistemaPaisa.Application.Common.Permissions;
+using SistemaPaisa.Application.Common.ProfileModules;
+using SistemaPaisa.Application.Common.ProfileRoles;
+using SistemaPaisa.Application.Common.Users;
 using SistemaPaisa.Application.Features.Auth.Commands.Login;
 using SistemaPaisa.Application.Features.Users.Commands.RegisterUser;
 using SistemaPaisa.Application.Features.Users.Commands.UpdateUserRole;
 using SistemaPaisa.Application.Features.Users.Queries.GetRolesForRegistration;
+using SistemaPaisa.Application.Common.Navigation;
+using SistemaPaisa.Web.Authorization;
 using SistemaPaisa.Web.Extensions;
+using SistemaPaisa.Web.Services;
 
 namespace SistemaPaisa.Web.Controllers;
 
 public class AccountController : Controller
 {
     private readonly IMediator _mediator;
+    private readonly IAuthService _authService;
+    private readonly IUserRegistrationService _userRegistrationService;
+    private readonly IAuthSessionService _authSessionService;
+    private readonly IProfileRoleService _profileRoleService;
+    private readonly IProfileModuleService _profileModuleService;
+    private readonly IModuleActionService _moduleActionService;
+    private readonly IPermissionService _permissionService;
 
-    public AccountController(IMediator mediator) => _mediator = mediator;
+    public AccountController(
+        IMediator mediator,
+        IAuthService authService,
+        IUserRegistrationService userRegistrationService,
+        IAuthSessionService authSessionService,
+        IProfileRoleService profileRoleService,
+        IProfileModuleService profileModuleService,
+        IModuleActionService moduleActionService,
+        IPermissionService permissionService)
+    {
+        _mediator = mediator;
+        _authService = authService;
+        _userRegistrationService = userRegistrationService;
+        _authSessionService = authSessionService;
+        _profileRoleService = profileRoleService;
+        _profileModuleService = profileModuleService;
+        _moduleActionService = moduleActionService;
+        _permissionService = permissionService;
+    }
 
     [HttpGet, AllowAnonymous]
     public IActionResult Login(string? returnUrl = null)
@@ -38,42 +69,22 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(command);
 
-        var result = await _mediator.Send(command);
+        var result = await _authService.LoginAsync(command.Email, command.Password);
 
         if (!result.Success)
         {
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Sign in failed.");
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "No se pudo iniciar sesión.");
             return View(command);
         }
 
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, result.UserId.ToString()),
-            new(ClaimTypes.Name, result.FullName),
-            new(ClaimTypes.Email, result.Email),
-            new(ClaimTypes.Role, result.RoleName),
-            new(AuthClaimTypes.RoleId, result.RoleId.ToString()),
-            new(AuthClaimTypes.RoleName, result.RoleName),
-            new(AuthClaimTypes.ClientId, result.ClientId.ToString()),
-            new(AuthClaimTypes.ClientName, result.ClientName)
-        };
-
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
-
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            principal,
-            new AuthenticationProperties
-            {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
-            });
+        await _authSessionService.SignInAsync(result);
+        await LoadUserAccessAsync();
 
         return RedirectToLocal(returnUrl);
     }
 
     [HttpGet, AllowAnonymous]
+    [RequireModuleAccess("USERS", PermissionCodes.Register)]
     public async Task<IActionResult> Register()
     {
         var command = new RegisterUserCommand();
@@ -87,6 +98,7 @@ public class AccountController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken, AllowAnonymous]
+    [RequireModuleAccess("USERS", PermissionCodes.Register)]
     public async Task<IActionResult> Register(RegisterUserCommand command)
     {
         if (!ModelState.IsValid)
@@ -110,7 +122,7 @@ public class AccountController : Controller
             command.CreatedBy = "self-registration";
         }
 
-        var result = await _mediator.Send(command);
+        var result = await _userRegistrationService.RegisterAsync(command);
 
         if (!result.Success)
         {
@@ -126,7 +138,7 @@ public class AccountController : Controller
         if (User.Identity?.IsAuthenticated == true)
         {
             TempData["SuccessMessage"] = "Usuario registrado correctamente.";
-            return RedirectToAction("Index", "Home", new { module = "USERS" });
+            return Redirect(ModuleRoutes.GetWorkspacePath("USERS"));
         }
 
         TempData["SuccessMessage"] = "Cuenta creada. Ya puedes iniciar sesion.";
@@ -137,7 +149,7 @@ public class AccountController : Controller
     [Authorize]
     public async Task<IActionResult> Logout()
     {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        await _authSessionService.SignOutAsync();
         return RedirectToAction(nameof(Login));
     }
 
@@ -151,6 +163,7 @@ public class AccountController : Controller
     }
 
     [HttpGet]
+    [RequireModuleAccess("USERS", PermissionCodes.Manage)]
     public async Task<IActionResult> EditRole(int id)
     {
         await LoadRolesAsync();
@@ -159,13 +172,14 @@ public class AccountController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
+    [RequireModuleAccess("USERS", PermissionCodes.Manage)]
     public async Task<IActionResult> EditRole(int userId, int roleId)
     {
         var updated = await _mediator.Send(new UpdateUserRoleCommand(userId, roleId));
         if (!updated) return NotFound();
 
         TempData["SuccessMessage"] = "Rol del usuario actualizado correctamente.";
-        return RedirectToAction("Index", "Home", new { module = "USERS" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("USERS"));
     }
 
     private async Task LoadRolesAsync(int? selectedRoleId = null)
@@ -179,11 +193,22 @@ public class AccountController : Controller
         }).ToList();
     }
 
+    private async Task LoadUserAccessAsync()
+    {
+        await _profileRoleService.GetForCurrentUserAsync();
+
+        var modules = await _profileModuleService.GetForCurrentUserAsync();
+        foreach (var module in modules)
+            await _moduleActionService.GetForCurrentUserByModuleCodeAsync(module.Code);
+
+        await _permissionService.GetCurrentPermissionsAsync();
+    }
+
     private IActionResult RedirectToLocal(string? returnUrl)
     {
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);
 
-        return RedirectToAction("Index", "Home");
+        return Redirect(ModuleRoutes.GetWorkspacePath("SYSTEM"));
     }
 }

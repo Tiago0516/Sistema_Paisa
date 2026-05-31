@@ -14,7 +14,7 @@
 {
     <header class="app-topbar">
         <div class="topbar-left">
-            <a class="topbar-brand" asp-controller="Home" asp-action="Index">
+            <a class="topbar-brand" href="@ModuleRoutes.GetWorkspacePath("SYSTEM")">
                 <span class="brand-icon"><i class="bi bi-geo-alt-fill"></i></span>
                 <span class="brand-text">SISTEMA PAISA</span>
             </a>
@@ -73,6 +73,7 @@ else
 
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/http-log.js" asp-append-version="true"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>
 <script src="~/js/profile-form.js" asp-append-version="true"></script>
 @if (User.Identity?.IsAuthenticated == true)

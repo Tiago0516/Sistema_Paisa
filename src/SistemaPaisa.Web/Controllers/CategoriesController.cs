@@ -1,23 +1,26 @@
 using MediatR;
+using SistemaPaisa.Application.Common.Navigation;
 using Microsoft.AspNetCore.Mvc;
-using SistemaPaisa.Web.Extensions;
+using SistemaPaisa.Application.Common.Permissions;
 using SistemaPaisa.Application.Features.Categories.Commands.CreateCategory;
 using SistemaPaisa.Application.Features.Categories.Commands.DeleteCategory;
 using SistemaPaisa.Application.Features.Categories.Commands.UpdateCategory;
-using SistemaPaisa.Application.Features.Categories.Queries.GetAllCategories;
 using SistemaPaisa.Application.Features.Categories.Queries.GetCategoryById;
+using SistemaPaisa.Web.Authorization;
+using SistemaPaisa.Web.Extensions;
 
 namespace SistemaPaisa.Web.Controllers;
 
+[Route("categories")]
+[RequireModuleAccess("CATEGORIES")]
 public class CategoriesController : Controller
 {
     private readonly IMediator _mediator;
 
     public CategoriesController(IMediator mediator) => _mediator = mediator;
 
-    public IActionResult Index() =>
-        RedirectToAction("Index", "Home", new { module = "CATEGORIES" });
-
+    [HttpGet("create")]
+    [RequireModuleAccess("CATEGORIES", PermissionCodes.Create)]
     public IActionResult Create()
     {
         var command = new CreateCategoryCommand();
@@ -27,7 +30,8 @@ public class CategoriesController : Controller
         return View(command);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost("create"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("CATEGORIES", PermissionCodes.Create)]
     public async Task<IActionResult> Create(CreateCategoryCommand command)
     {
         if (!ModelState.IsValid)
@@ -42,9 +46,11 @@ public class CategoriesController : Controller
         if (Request.IsModalRequest())
             return Json(new { success = true });
 
-        return RedirectToAction("Index", "Home", new { module = "CATEGORIES" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("CATEGORIES"));
     }
 
+    [HttpGet("edit/{id:int}")]
+    [RequireModuleAccess("CATEGORIES", PermissionCodes.Manage)]
     public async Task<IActionResult> Edit(int id)
     {
         var category = await _mediator.Send(new GetCategoryByIdQuery(id));
@@ -59,15 +65,18 @@ public class CategoriesController : Controller
         return View(command);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost("edit/{id:int}"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("CATEGORIES", PermissionCodes.Manage)]
     public async Task<IActionResult> Edit(UpdateCategoryCommand command)
     {
         if (!ModelState.IsValid) return View(command);
         var updated = await _mediator.Send(command);
         if (!updated) return NotFound();
-        return RedirectToAction("Index", "Home", new { module = "CATEGORIES" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("CATEGORIES"));
     }
 
+    [HttpGet("delete/{id:int}")]
+    [RequireModuleAccess("CATEGORIES", PermissionCodes.Manage)]
     public async Task<IActionResult> Delete(int id)
     {
         var category = await _mediator.Send(new GetCategoryByIdQuery(id));
@@ -75,13 +84,15 @@ public class CategoriesController : Controller
         return View(category);
     }
 
-    [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+    [HttpPost("delete/{id:int}"), ActionName("Delete"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("CATEGORIES", PermissionCodes.Manage)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         await _mediator.Send(new DeleteCategoryCommand(id));
-        return RedirectToAction("Index", "Home", new { module = "CATEGORIES" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("CATEGORIES"));
     }
 
+    [HttpGet("details/{id:int}")]
     public async Task<IActionResult> Details(int id)
     {
         var category = await _mediator.Send(new GetCategoryByIdQuery(id));
