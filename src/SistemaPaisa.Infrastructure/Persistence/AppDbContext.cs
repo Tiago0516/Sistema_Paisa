@@ -19,6 +19,8 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Client> Clients => Set<Client>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -184,6 +186,15 @@ public class AppDbContext : DbContext
                 .WithMany(r => r.Users)
                 .HasForeignKey(u => u.RoleId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Supplier>(e =>
+        {
+            e.ToTable("Suppliers");
+            e.HasKey(s => s.Id);
+            e.ConfigureAuditable();
+            e.Property(s => s.Name).IsRequired().HasMaxLength(150);
+            e.Property(s => s.Email).IsRequired().HasMaxLength(150);
         });
     }
 }

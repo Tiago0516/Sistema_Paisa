@@ -1,25 +1,29 @@
 using MediatR;
+using SistemaPaisa.Application.Common.Navigation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using SistemaPaisa.Web.Extensions;
+using SistemaPaisa.Application.Common.Permissions;
 using SistemaPaisa.Application.Features.Categories.Queries.GetAllCategories;
 using SistemaPaisa.Application.Features.Products.Commands.CreateProduct;
 using SistemaPaisa.Application.Features.Products.Commands.DeleteProduct;
 using SistemaPaisa.Application.Features.Products.Commands.UpdateProduct;
 using SistemaPaisa.Application.Features.Products.Queries.GetAllProducts;
 using SistemaPaisa.Application.Features.Products.Queries.GetProductById;
+using SistemaPaisa.Web.Authorization;
+using SistemaPaisa.Web.Extensions;
 
 namespace SistemaPaisa.Web.Controllers;
 
+[Route("products")]
+[RequireModuleAccess("PRODUCTS")]
 public class ProductsController : Controller
 {
     private readonly IMediator _mediator;
 
     public ProductsController(IMediator mediator) => _mediator = mediator;
 
-    public IActionResult Index() =>
-        RedirectToAction("Index", "Home", new { module = "PRODUCTS" });
-
+    [HttpGet("create")]
+    [RequireModuleAccess("PRODUCTS", PermissionCodes.Create)]
     public async Task<IActionResult> Create()
     {
         await LoadCategoriesAsync();
@@ -30,7 +34,8 @@ public class ProductsController : Controller
         return View(command);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost("create"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("PRODUCTS", PermissionCodes.Create)]
     public async Task<IActionResult> Create(CreateProductCommand command)
     {
         if (!ModelState.IsValid)
@@ -46,9 +51,11 @@ public class ProductsController : Controller
         if (Request.IsModalRequest())
             return Json(new { success = true });
 
-        return RedirectToAction("Index", "Home", new { module = "PRODUCTS" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("PRODUCTS"));
     }
 
+    [HttpGet("edit/{id:int}")]
+    [RequireModuleAccess("PRODUCTS", PermissionCodes.Manage)]
     public async Task<IActionResult> Edit(int id)
     {
         var product = await _mediator.Send(new GetProductByIdQuery(id));
@@ -67,7 +74,8 @@ public class ProductsController : Controller
         return View(command);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost("edit/{id:int}"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("PRODUCTS", PermissionCodes.Manage)]
     public async Task<IActionResult> Edit(UpdateProductCommand command)
     {
         if (!ModelState.IsValid)
@@ -79,9 +87,11 @@ public class ProductsController : Controller
         var updated = await _mediator.Send(command);
         if (!updated) return NotFound();
 
-        return RedirectToAction("Index", "Home", new { module = "PRODUCTS" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("PRODUCTS"));
     }
 
+    [HttpGet("delete/{id:int}")]
+    [RequireModuleAccess("PRODUCTS", PermissionCodes.Manage)]
     public async Task<IActionResult> Delete(int id)
     {
         var product = await _mediator.Send(new GetProductByIdQuery(id));
@@ -89,13 +99,15 @@ public class ProductsController : Controller
         return View(product);
     }
 
-    [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+    [HttpPost("delete/{id:int}"), ActionName("Delete"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("PRODUCTS", PermissionCodes.Manage)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         await _mediator.Send(new DeleteProductCommand(id));
-        return RedirectToAction("Index", "Home", new { module = "PRODUCTS" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("PRODUCTS"));
     }
 
+    [HttpGet("details/{id:int}")]
     public async Task<IActionResult> Details(int id)
     {
         var product = await _mediator.Send(new GetProductByIdQuery(id));

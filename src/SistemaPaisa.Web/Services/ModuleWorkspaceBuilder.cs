@@ -8,6 +8,8 @@ using SistemaPaisa.Application.Features.Navigation.Queries.GetNavigationMenu;
 using SistemaPaisa.Application.Features.Products.Queries.GetAllProducts;
 using SistemaPaisa.Application.Features.Profiles.Queries.GetAllProfiles;
 using SistemaPaisa.Application.Features.Roles.Queries.GetAllRoles;
+using SistemaPaisa.Application.Features.Suppliers.Queries.GetAllSuppliers;
+using SistemaPaisa.Application.Common.Navigation;
 using SistemaPaisa.Application.Features.Users.Queries.GetAllUsers;
 using SistemaPaisa.Web.Models;
 
@@ -46,6 +48,7 @@ public class ModuleWorkspaceBuilder
         {
             ["Products"]   = (mod, ct) => BuildProductsGridAsync(mod, ct),
             ["Categories"] = (mod, ct) => BuildCategoriesGridAsync(mod, ct),
+            ["Suppliers"]  = (mod, ct) => BuildSuppliersGridAsync(mod, ct),
             ["Account"]    = (mod, ct) => BuildUsersGridAsync(mod, ct),
             ["Modules"]    = (mod, ct) => BuildModulesGridAsync(mod, ct),
             ["AppActions"] = (mod, ct) => BuildActionsGridAsync(mod, ct),
@@ -183,6 +186,43 @@ public class ModuleWorkspaceBuilder
                 new() { Key = "name",        Label = "Nombre" },
                 new() { Key = "description", Label = "Descripción" },
                 new() { Key = "active",      Label = "Activo" }
+            ]
+        };
+    }
+
+    private async Task<ModuleGridViewModel> BuildSuppliersGridAsync(NavigationModuleDto module, CancellationToken cancellationToken)
+    {
+        var suppliers = await _mediator.Send(new GetAllSuppliersQuery(), cancellationToken);
+
+        return new ModuleGridViewModel
+        {
+            Title = module.Name,
+            ModuleCode = module.Code,
+            CreateUrl = ActionUrl(module.CreateActionName ?? "Create", "Suppliers"),
+            AllowCreate = true,
+            AllowView = true,
+            AllowEdit = true,
+            AllowDelete = true,
+            Rows = suppliers.Select(s => new ModuleGridRow
+            {
+                Cells = new Dictionary<string, string>
+                {
+                    ["name"]   = s.Name,
+                    ["email"]  = s.Email,
+                    ["active"] = s.IsActive ? "Sí" : "No"
+                },
+                Actions = new ModuleGridRowActions
+                {
+                    DetailsUrl = ActionUrl("Details", "Suppliers", new { id = s.Id }),
+                    EditUrl    = ActionUrl("Edit",    "Suppliers", new { id = s.Id }),
+                    DeleteUrl  = ActionUrl("Delete",  "Suppliers", new { id = s.Id })
+                }
+            }).ToList(),
+            Columns =
+            [
+                new() { Key = "name",   Label = "Nombre" },
+                new() { Key = "email",  Label = "Correo" },
+                new() { Key = "active", Label = "Activo" }
             ]
         };
     }
@@ -408,7 +448,7 @@ public class ModuleWorkspaceBuilder
                     },
                     Actions = new ModuleGridRowActions
                     {
-                        DetailsUrl = ActionUrl("Index", "Home", new { module = m.Code })
+                        DetailsUrl = ModuleRoutes.GetWorkspacePath(m.Code)
                     }
                 })
                 .ToList()

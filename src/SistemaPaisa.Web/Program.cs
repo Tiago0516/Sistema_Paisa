@@ -5,9 +5,13 @@ using SistemaPaisa.Application;
 using SistemaPaisa.Application.Common.Interfaces;
 using SistemaPaisa.Infrastructure;
 using SistemaPaisa.Infrastructure.Data;
+using SistemaPaisa.Web.Routing;
 using SistemaPaisa.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddRouting(options =>
+    options.ConstraintMap.Add("moduleSlug", typeof(ModuleSlugRouteConstraint)));
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -33,6 +37,7 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IAuthSessionService, AuthSessionService>();
 builder.Services.AddScoped<ModuleWorkspaceBuilder>();
 
 var app = builder.Build();
@@ -51,6 +56,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapControllers();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");

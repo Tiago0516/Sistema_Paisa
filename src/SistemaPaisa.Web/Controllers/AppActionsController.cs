@@ -1,4 +1,5 @@
 using MediatR;
+using SistemaPaisa.Application.Common.Navigation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SistemaPaisa.Application.Features.AppActions.Commands.CreateAppAction;
@@ -6,19 +7,22 @@ using SistemaPaisa.Application.Features.AppActions.Commands.DeleteAppAction;
 using SistemaPaisa.Application.Features.AppActions.Commands.UpdateAppAction;
 using SistemaPaisa.Application.Features.AppActions.Queries.GetAppActionById;
 using SistemaPaisa.Application.Features.Modules.Queries.GetAllModulesForSelect;
+using SistemaPaisa.Application.Common.Permissions;
+using SistemaPaisa.Web.Authorization;
 using SistemaPaisa.Web.Extensions;
 
 namespace SistemaPaisa.Web.Controllers;
 
+[Route("actions")]
+[RequireModuleAccess("ACTIONS")]
 public class AppActionsController : Controller
 {
     private readonly IMediator _mediator;
 
     public AppActionsController(IMediator mediator) => _mediator = mediator;
 
-    public IActionResult Index() =>
-        RedirectToAction("Index", "Home", new { module = "ACTIONS" });
-
+    [HttpGet("create")]
+    [RequireModuleAccess("ACTIONS", PermissionCodes.Create)]
     public async Task<IActionResult> Create()
     {
         await LoadModulesAsync();
@@ -26,7 +30,8 @@ public class AppActionsController : Controller
         return Request.IsModalRequest() ? PartialView("_CreateForm", command) : View(command);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost("create"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("ACTIONS", PermissionCodes.Create)]
     public async Task<IActionResult> Create(CreateAppActionCommand command)
     {
         if (!ModelState.IsValid)
@@ -41,9 +46,11 @@ public class AppActionsController : Controller
         if (Request.IsModalRequest())
             return Json(new { success = true });
 
-        return RedirectToAction("Index", "Home", new { module = "ACTIONS" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("ACTIONS"));
     }
 
+    [HttpGet("edit/{id:int}")]
+    [RequireModuleAccess("ACTIONS", PermissionCodes.Manage)]
     public async Task<IActionResult> Edit(int id)
     {
         var action = await _mediator.Send(new GetAppActionByIdQuery(id));
@@ -61,7 +68,8 @@ public class AppActionsController : Controller
         return View(command);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost("edit/{id:int}"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("ACTIONS", PermissionCodes.Manage)]
     public async Task<IActionResult> Edit(UpdateAppActionCommand command)
     {
         if (!ModelState.IsValid)
@@ -72,9 +80,11 @@ public class AppActionsController : Controller
 
         var updated = await _mediator.Send(command);
         if (!updated) return NotFound();
-        return RedirectToAction("Index", "Home", new { module = "ACTIONS" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("ACTIONS"));
     }
 
+    [HttpGet("delete/{id:int}")]
+    [RequireModuleAccess("ACTIONS", PermissionCodes.Manage)]
     public async Task<IActionResult> Delete(int id)
     {
         var action = await _mediator.Send(new GetAppActionByIdQuery(id));
@@ -82,13 +92,15 @@ public class AppActionsController : Controller
         return View(action);
     }
 
-    [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+    [HttpPost("delete/{id:int}"), ActionName("Delete"), ValidateAntiForgeryToken]
+    [RequireModuleAccess("ACTIONS", PermissionCodes.Manage)]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
         await _mediator.Send(new DeleteAppActionCommand(id));
-        return RedirectToAction("Index", "Home", new { module = "ACTIONS" });
+        return Redirect(ModuleRoutes.GetWorkspacePath("ACTIONS"));
     }
 
+    [HttpGet("details/{id:int}")]
     public async Task<IActionResult> Details(int id)
     {
         var action = await _mediator.Send(new GetAppActionByIdQuery(id));

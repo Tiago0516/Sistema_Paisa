@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<IRolePermissionRepository, RolePermissionRepository>();
         services.AddScoped<IClientRepository, ClientRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasherService>();
+        services.AddScoped<ISupplierRepository, SupplierRepository>();
         return services;
     }
 }

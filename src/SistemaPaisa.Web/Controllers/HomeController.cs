@@ -1,24 +1,23 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SistemaPaisa.Application.Common.Navigation;
 using SistemaPaisa.Web.Models;
-using SistemaPaisa.Web.Services;
 
 namespace SistemaPaisa.Web.Controllers;
 
 public class HomeController : Controller
 {
-    private readonly ModuleWorkspaceBuilder _workspaceBuilder;
-
-    public HomeController(ModuleWorkspaceBuilder workspaceBuilder) =>
-        _workspaceBuilder = workspaceBuilder;
-
-    public async Task<IActionResult> Index(string? module, CancellationToken cancellationToken)
+    /// <summary>
+    /// Redirección legacy: /Home/Index?module=SUPPLIERS → /suppliers
+    /// </summary>
+    [HttpGet]
+    public IActionResult Index(string? module)
     {
-        var model = await _workspaceBuilder.BuildAsync(module, cancellationToken);
-        ViewData["Title"] = model.Grid.Title;
-        ViewData["ActiveModuleCode"] = model.ActiveModuleCode;
-        return View(model);
+        if (string.IsNullOrWhiteSpace(module))
+            return RedirectPermanent(ModuleRoutes.GetWorkspacePath("SYSTEM"));
+
+        return RedirectPermanent(ModuleRoutes.GetWorkspacePath(module));
     }
 
     public IActionResult Privacy() => View();

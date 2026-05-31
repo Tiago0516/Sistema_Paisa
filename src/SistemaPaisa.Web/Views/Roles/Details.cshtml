@@ -22,4 +22,4 @@
 </dl>
 
 <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Editar</a>
-<a asp-controller="Home" asp-action="Index" asp-route-module="ROLES" class="btn btn-secondary">Volver</a>
+<a href="@ModuleRoutes.GetWorkspacePath("ROLES")" class="btn btn-secondary">Volver</a>

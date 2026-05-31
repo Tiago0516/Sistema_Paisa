@@ -28,7 +28,7 @@
         <label asp-for="IsActive" class="form-check-label">Activo</label>
     </div>
     <button type="submit" class="btn btn-primary">Guardar</button>
-    <a asp-controller="Home" asp-action="Index" asp-route-module="MODULES" class="btn btn-secondary">Volver</a>
+    <a href="@ModuleRoutes.GetWorkspacePath("MODULES")" class="btn btn-secondary">Volver</a>
 </form>
 
 @section Scripts {

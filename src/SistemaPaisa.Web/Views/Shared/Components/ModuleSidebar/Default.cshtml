@@ -1,3 +1,4 @@
+@using SistemaPaisa.Application.Common.Navigation
 @model SistemaPaisa.Application.DTOs.NavigationMenuDto
 
 @{
@@ -27,7 +28,7 @@
             @foreach (var module in Model.Modules)
             {
                 var isActive = string.Equals(module.Code, activeModuleCode, StringComparison.OrdinalIgnoreCase);
-                var workspaceUrl = Url.Action("Index", "Home", new { module = module.Code })!;
+                var workspaceUrl = ModuleRoutes.GetWorkspacePath(module.Code);
                 <a class="sidebar-module-link @(isActive ? "active" : "")"
                    href="@workspaceUrl"
                    data-module-code="@module.Code">

@@ -89,6 +89,7 @@ namespace SistemaPaisa.Infrastructure.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
+                        .IsUnicode(false)
                         .HasColumnType("varchar(50)")
                         .HasDefaultValue("ACTIVO")
                         .HasColumnName("estado");
@@ -219,14 +220,14 @@ namespace SistemaPaisa.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("CreateActionName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("CreateActionName")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -243,8 +244,9 @@ namespace SistemaPaisa.Infrastructure.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsLanding")
-                        .HasDefaultValue(false)
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -399,6 +401,7 @@ namespace SistemaPaisa.Infrastructure.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
+                        .IsUnicode(false)
                         .HasColumnType("varchar(50)")
                         .HasDefaultValue("ACTIVO")
                         .HasColumnName("estado");
@@ -452,6 +455,7 @@ namespace SistemaPaisa.Infrastructure.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
+                        .IsUnicode(false)
                         .HasColumnType("varchar(50)")
                         .HasDefaultValue("ACTIVO")
                         .HasColumnName("estado");
@@ -525,6 +529,46 @@ namespace SistemaPaisa.Infrastructure.Migrations
                     b.HasIndex("ClientId");
 
                     b.ToTable("Roles", (string)null);
+                });
+
+            modelBuilder.Entity("SistemaPaisa.Domain.Entities.Supplier", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Suppliers", (string)null);
                 });
 
             modelBuilder.Entity("SistemaPaisa.Domain.Entities.User", b =>
@@ -704,14 +748,14 @@ namespace SistemaPaisa.Infrastructure.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("SistemaPaisa.Domain.Entities.Client", b =>
-                {
-                    b.Navigation("Roles");
-                });
-
             modelBuilder.Entity("SistemaPaisa.Domain.Entities.ActionEntity", b =>
                 {
                     b.Navigation("ActionModules");
+                });
+
+            modelBuilder.Entity("SistemaPaisa.Domain.Entities.Client", b =>
+                {
+                    b.Navigation("Roles");
                 });
 
             modelBuilder.Entity("SistemaPaisa.Domain.Entities.Module", b =>

@@ -10,6 +10,26 @@ public class ProfileRoleRepository : IProfileRoleRepository
 
     public ProfileRoleRepository(AppDbContext context) => _context = context;
 
+    public async Task<ProfileRoleInfo?> GetByRoleIdAsync(
+        int roleId,
+        CancellationToken cancellationToken = default) =>
+        await _context.ProfileRoles
+            .AsNoTracking()
+            .Where(pr =>
+                pr.RoleId == roleId &&
+                pr.Estado == RelationStatuses.Active &&
+                pr.Profile.IsActive &&
+                pr.Role.IsActive)
+            .Select(pr => new ProfileRoleInfo
+            {
+                RelationId = pr.Id,
+                RoleId = pr.RoleId,
+                RoleName = pr.Role.Name,
+                ProfileId = pr.ProfileId,
+                ProfileName = pr.Profile.Name
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<int?> GetProfileIdByRoleIdAsync(
         int roleId,
         CancellationToken cancellationToken = default) =>

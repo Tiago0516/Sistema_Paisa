@@ -22,5 +22,5 @@
 <form asp-action="Delete" method="post">
     <input type="hidden" name="id" value="@Model.Id" />
     <button type="submit" class="btn btn-danger">Eliminar</button>
-    <a asp-controller="Home" asp-action="Index" asp-route-module="ROLES" class="btn btn-secondary">Cancelar</a>
+    <a href="@ModuleRoutes.GetWorkspacePath("ROLES")" class="btn btn-secondary">Cancelar</a>
 </form>

@@ -50,6 +50,15 @@ internal static class ModuleSeeder
             Icon: "bi-tags",
             ControllerName: "Categories"),
 
+        new("SUPPLIERS", "Proveedores", "Gestión de proveedores",
+            Actions:
+            [
+                new("LIST", "Listar proveedores"),
+                new("CREATE", "Crear proveedor")
+            ],
+            Icon: "bi-truck",
+            ControllerName: "Suppliers"),
+
         new("USERS", "Users", "User management",
             Actions:
             [
@@ -145,12 +154,6 @@ internal static class ModuleSeeder
                     .Where(am => am.ModuleId == module.Id && am.Action.Code == actionSeed.Code)
                     .Select(am => am.Action)
                     .FirstOrDefaultAsync();
-
-                if (action is null)
-                {
-                    action = await context.Actions
-                        .FirstOrDefaultAsync(a => a.Code == actionSeed.Code && a.Name == actionSeed.Name);
-                }
 
                 if (action is null)
                 {
